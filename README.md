@@ -9,10 +9,13 @@ Boîte à outils générique pour fine-tuning de Small Language Models (SLM).
 - Évaluation (rouge, exact match, BERTScore, XML-validité…)
 - Packaging & service API
 
+---
+
 ## Installation
 ```bash
 pip install -e .
 ```
+---
 
 ## Arborescence
 
@@ -55,6 +58,8 @@ slm-lab-core/
    └─ demo.py                  # petite API/streamlit
 
 ```
+
+---
 
 ## Utilisation rapide
 
