@@ -13,7 +13,6 @@ dependencies = [
 ]
 
 [tool.setuptools]
-package-dir = {"" = "src"}
 packages = ["slmlab", "cli"]
 
 [tool.pytest.ini_options]
