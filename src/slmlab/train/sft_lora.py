@@ -1,10 +1,20 @@
-# src/slmlab/train/sft_lora.py
+import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, Trainer
 from peft import LoraConfig, get_peft_model
 
+def get_device():
+    if torch.cuda.is_available():
+        return "cuda"
+    elif torch.backends.mps.is_available():
+        return "mps"
+    else:
+        return "cpu"
+
 def train(cfg, ds_tokenized, output_dir: str):
     tok = AutoTokenizer.from_pretrained(cfg.model.name, use_fast=True, trust_remote_code=cfg.model.get("trust_remote_code", True))
-    model = AutoModelForCausalLM.from_pretrained(cfg.model.name, trust_remote_code=cfg.model.get("trust_remote_code", True))
+    device = get_device()
+    print(f"[slmlab] Using device: {device}")
+    model = AutoModelForCausalLM.from_pretrained(cfg.model.name, trust_remote_code=cfg.model.get("trust_remote_code", True)).to(device)
     peft_conf = cfg.method.get("peft", {})
     lora = LoraConfig(
         r=peft_conf.get("r", 16),
