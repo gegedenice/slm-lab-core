@@ -10,49 +10,94 @@ def get_device():
     else:
         return "cpu"
 
+# ---- helpers: work with dicts or SimpleNamespace trees ----
+def _get(obj, key, default=None):
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
+def _get_in(obj, keys, default=None):
+    cur = obj
+    for k in keys:
+        cur = _get(cur, k, None)
+        if cur is None:
+            return default
+    return cur
+
 def train(cfg, ds_tokenized, output_dir: str):
-    tok = AutoTokenizer.from_pretrained(cfg.model.name, use_fast=True, trust_remote_code=cfg.model.get("trust_remote_code", True))
+    model_name = _get_in(cfg, ["model", "name"])
+    trust_remote_code = _get_in(cfg, ["model", "trust_remote_code"], True)
+
+    tok = AutoTokenizer.from_pretrained(
+        model_name, use_fast=True, trust_remote_code=trust_remote_code
+    )
+
     device = get_device()
     print(f"[slmlab] Using device: {device}")
-    model = AutoModelForCausalLM.from_pretrained(cfg.model.name, trust_remote_code=cfg.model.get("trust_remote_code", True)).to(device)
-    peft_conf = cfg.method.get("peft", {})
+
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name, trust_remote_code=trust_remote_code
+    ).to(device)
+
+    # LoRA config (handle dict or namespace)
+    peft_conf = _get(cfg, "method", {})  # may be ns
+    peft_conf = _get(peft_conf, "peft", {})  # dive into 'peft' sub-config if present
+
     lora = LoraConfig(
-        r=peft_conf.get("r", 16),
-        lora_alpha=peft_conf.get("lora_alpha", 32),
-        lora_dropout=peft_conf.get("lora_dropout", 0.05),
-        target_modules=peft_conf.get("target_modules", ["q_proj","k_proj","v_proj","o_proj","gate_proj","up_proj","down_proj"])
+        r=_get(peft_conf, "r", 16),
+        lora_alpha=_get(peft_conf, "lora_alpha", 32),
+        lora_dropout=_get(peft_conf, "lora_dropout", 0.05),
+        target_modules=_get(
+            peft_conf,
+            "target_modules",
+            ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+        ),
     )
     model = get_peft_model(model, lora)
 
+    # TrainingArguments — read safely and coerce types where needed
+    train_cfg = _get(cfg, "train", {})
+    lr = _get(train_cfg, "lr", 2e-4)
+    if isinstance(lr, str):
+        try:
+            lr = float(lr)
+        except ValueError:
+            lr = 2e-4  # fallback
+
     targs = dict(
         output_dir=output_dir,
-        per_device_train_batch_size=cfg.train.per_device_train_batch_size,
-        gradient_accumulation_steps=cfg.train.gradient_accumulation_steps,
-        learning_rate=cfg.train.lr,
-        logging_steps=cfg.train.logging_steps,
-        eval_steps=cfg.train.eval_steps,
-        save_steps=cfg.train.save_steps,
-        warmup_ratio=cfg.train.get("warmup_ratio", 0.0),
-        lr_scheduler_type=cfg.train.get("lr_scheduler_type", "linear"),
-        seed=cfg.get("seed", 42),
-        fp16=cfg.train.get("fp16", False),
-        bf16=cfg.train.get("bf16", False),
+        per_device_train_batch_size=_get(train_cfg, "per_device_train_batch_size", 1),
+        gradient_accumulation_steps=_get(train_cfg, "gradient_accumulation_steps", 1),
+        learning_rate=lr,
+        logging_steps=_get(train_cfg, "logging_steps", 50),
+        eval_steps=_get(train_cfg, "eval_steps", 200),
+        save_steps=_get(train_cfg, "save_steps", 200),
+        warmup_ratio=_get(train_cfg, "warmup_ratio", 0.0),
+        lr_scheduler_type=_get(train_cfg, "lr_scheduler_type", "linear"),
+        seed=_get(cfg, "seed", 42),
+        fp16=_get(train_cfg, "fp16", False),
+        bf16=_get(train_cfg, "bf16", False),
         report_to=["none"],
-        gradient_checkpointing=cfg.train.get("gradient_checkpointing", False),
+        gradient_checkpointing=_get(train_cfg, "gradient_checkpointing", False),
     )
-    if cfg.train.get("max_steps", None):
-        targs["max_steps"] = cfg.train.max_steps
+
+    max_steps = _get(train_cfg, "max_steps", None)
+    if max_steps:
+        targs["max_steps"] = max_steps
     else:
-        targs["num_train_epochs"] = cfg.train.get("num_train_epochs", 1)
+        targs["num_train_epochs"] = _get(train_cfg, "num_train_epochs", 1)
 
     args = TrainingArguments(**targs)
+
+    # DatasetDict is dict-like; .get is fine, but use [] fallback if not present
+    eval_ds = ds_tokenized.get("eval") if hasattr(ds_tokenized, "get") else ds_tokenized["eval"] if "eval" in ds_tokenized else None
 
     trainer = Trainer(
         model=model,
         args=args,
         train_dataset=ds_tokenized["train"],
-        eval_dataset=ds_tokenized.get("eval"),
+        eval_dataset=eval_ds,
         tokenizer=tok,
     )
     trainer.train()
-    trainer.save_model(output_dir + "/adapter/")
+    trainer.save_model(f"{output_dir.rstrip('/')}/adapter/")
