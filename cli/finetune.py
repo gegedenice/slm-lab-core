@@ -35,16 +35,32 @@ def run(cfg_path: Path = Path("configs/default.yaml")):
 
     if mode == "chat":
         def tok_fn(batch):
+            msgs_list = batch["messages"]  # list[ list[{"role","content"}, ...] ]
+            # to input strings with special tokens
             txts = [
-                tok.apply_chat_template(ex["messages"], tokenize=False, add_generation_prompt=False)
-                for ex in batch
+                tok.apply_chat_template(msgs, tokenize=False, add_generation_prompt=False)
+                for msgs in msgs_list
             ]
-            labels = [ex["messages"][-1]["content"] for ex in batch]
-            return tok(txts, text_target=labels, truncation=True, max_length=max_len)
+            # targets = last assistant message content
+            labels = [
+                (msgs[-1]["content"] if msgs and msgs[-1].get("role") == "assistant"
+                 else "")  # or raise if schema invalid
+                for msgs in msgs_list
+            ]
+            return tok(
+                txts,
+                text_target=labels,
+                truncation=True,
+                max_length=max_len,
+            )
     else:
         def tok_fn(batch):
-            return tok(batch["prompt"], text_target=batch["label"],
-                       truncation=True, max_length=max_len)
+            return tok(
+                batch["prompt"],
+                text_target=batch["label"],
+                truncation=True,
+                max_length=max_len,
+            )
 
     cols = ds["train"].column_names
     ds_tok = ds.map(tok_fn, batched=True, num_proc=num_proc, remove_columns=cols)
