@@ -28,6 +28,9 @@ def _get_in(obj, keys, default=None):
 # ---- helpers: peft modules parameters ----   
 def _count_trainable_params(m):
     return sum(p.requires_grad for p in m.parameters())
+    
+def _num_trainable(m):
+    return sum(p.numel() for p in m.parameters() if p.requires_grad)
 
 def _guess_target_modules(model):
     # Return unique module names containing Linear layers under attention/MLP blocks
@@ -74,6 +77,18 @@ def train(cfg, ds_tokenized, output_dir: str):
         task_type=TaskType.CAUSAL_LM,
     )
     model = get_peft_model(model, lora)
+    
+    print("[peft] trainable keys (first 20):", list(get_peft_model_state_dict(model).keys())[:20])
+    print("[peft] #trainable params:", _num_trainable(model))
+
+    if _num_trainable(model) == 0:
+        # Fallback: target all linear-like layers by leaf name
+        leaf_linear_names = sorted({n.split(".")[-1]
+            for n, mod in model.named_modules() if isinstance(mod, nn.Linear)})
+        raise RuntimeError(
+            "LoRA attached to 0 params. Your `target_modules` didn't match.\n"
+            f"Try `target_modules: \"all-linear\"` or one of these leaf names:\n{leaf_linear_names}"
+        )
     
     if _count_trainable_params(model) == 0:
         # fallback if user provided names matched nothing
