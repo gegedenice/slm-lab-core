@@ -41,4 +41,4 @@ def run(cfg_path: Path = Path("configs/default.yaml")):
         raise ValueError(f"Unsupported method: {method}")
     
 if __name__ == "__main__":
-    app()
+    typer.run(run)
