@@ -12,8 +12,8 @@ dependencies = [
   "typer",
 ]
 
-[tool.setuptools]
-packages = ["slmlab", "cli"]
+[tool.setuptools.packages.find]
+include = ["slmlab*", "cli*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
