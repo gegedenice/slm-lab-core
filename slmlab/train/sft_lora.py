@@ -45,18 +45,24 @@ def _guess_target_modules(model):
 def train(cfg, ds_tokenized, output_dir: str):
     model_name = _get_in(cfg, ["model", "name"])
     trust_remote_code = _get_in(cfg, ["model", "trust_remote_code"], True)
-
+    attn_impl = _get_in(cfg, ["model", "attn_implementation"], None)
+    
     tok = AutoTokenizer.from_pretrained(
         model_name, use_fast=True, trust_remote_code=trust_remote_code
     )
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
+        
+    # Build kwargs for the model only
+    model_kwargs = dict(trust_remote_code=trust_remote_code)
+    if attn_impl:
+        model_kwargs["attn_implementation"] = attn_impl
 
     device = get_device()
-    print(f"[slmlab] Using device: {device}")
+    print(f"[slmlab] Using device: {device}, attn_impl={attn_impl or 'default'}")
 
     model = AutoModelForCausalLM.from_pretrained(
-        model_name, trust_remote_code=trust_remote_code
+        model_name, **model_kwargs
     ).to(device)
     
     # recommended when using gradient checkpointing
