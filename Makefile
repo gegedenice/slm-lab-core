@@ -7,12 +7,7 @@ install:
 
 # ---- Development ----
 prep:
-	cd use_cases/$(USE_CASE) && \
-	PYTHONPATH=. python -m slm_lab_unimarc.io.loader_hf \
-		--repo Geraldine/metadata-to-unimarc-reasoning \
-		--train data/processed/train.jsonl \
-		--eval data/eval/heldout.jsonl \
-		--eval-ratio 0.2
+	python -m cli.io build-from-hf $(USE_CASE)
 
 train:
 	python -m cli.finetune run $(USE_CASE)
