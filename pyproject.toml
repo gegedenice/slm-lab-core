@@ -10,6 +10,9 @@ dependencies = [
   "evaluate>=0.4",
   "lxml",
   "typer",
+  "pyyaml",
+  "gradio",
+  "ipykernel",
 ]
 
 [tool.setuptools.packages.find]

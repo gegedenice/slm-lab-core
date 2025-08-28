@@ -15,17 +15,18 @@ def _get(obj, key, default=None):
     return getattr(obj, key, default)
 
 @app.command()
-def run(cfg_path: Path = Path("configs/default.yaml")):
-    cfg = load_config(cfg_path)
+def run(use_case: str):
+    cfg = load_config(use_case)
 
     model_name = _get(_get(cfg, "model"), "name")
     tok = AutoTokenizer.from_pretrained(model_name, use_fast=True, trust_remote_code=True)
 
-    train_path = _get(_get(cfg, "paths"), "train")
-    eval_path  = _get(_get(cfg, "paths"), "eval")
-    outdir     = _get(_get(cfg, "paths"), "out")
+    use_case_dir = Path(f"use_cases/{use_case}")
+    train_path = use_case_dir / _get(_get(cfg, "paths"), "train")
+    eval_path  = use_case_dir / _get(_get(cfg, "paths"), "eval")
+    outdir     = use_case_dir / _get(_get(cfg, "paths"), "out")
 
-    ds = load_dataset("json", data_files={"train": train_path, "eval": eval_path})
+    ds = load_dataset("json", data_files={"train": str(train_path), "eval": str(eval_path)})
 
     mode   = _get(_get(cfg, "templating"), "mode", "base")
     method = _get(_get(cfg, "method"), "method", "sft_lora")

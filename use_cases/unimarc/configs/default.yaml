@@ -1,0 +1,28 @@
+seed: 42
+work_dir: "."
+model: configs/models/model.yaml
+method: configs/methods/sft_lora.yaml
+
+templating:
+  mode: base  # base | chat
+
+train:
+  max_steps: 300
+  num_train_epochs: 1
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 2
+  lr: 2e-4
+  warmup_ratio: 0.03
+  logging_steps: 25
+  eval_steps: 100
+  save_steps: 100
+  bf16: true
+  fp16: false
+  gradient_checkpointing: true
+  num_proc: 2
+  max_length: 1024
+
+paths:
+  train: data/processed/train.jsonl
+  eval: data/eval/heldout.jsonl
+  out: runs/
