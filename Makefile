@@ -34,6 +34,9 @@ eval: install
 run-gradio: install
 	uv run gradio app.py
 
+train-hf-job: install
+	uv run python scripts/run_hf_job.py $(USE_CASE)
+
 # ---- Testing ----
 test: install
 	uv run pytest -q

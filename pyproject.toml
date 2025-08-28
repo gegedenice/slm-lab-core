@@ -13,6 +13,9 @@ dependencies = [
   "pyyaml",
   "gradio",
   "ipykernel",
+  "unsloth",
+  "trl",
+  "bitsandbytes",
 ]
 
 [tool.setuptools.packages.find]
