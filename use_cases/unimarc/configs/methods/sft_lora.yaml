@@ -1,0 +1,6 @@
+method: sft_lora
+peft:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: "all-linear"

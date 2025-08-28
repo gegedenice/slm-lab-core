@@ -1,0 +1,3 @@
+name: LiquidAI/LFM2-350M
+trust_remote_code: true
+attn_implementation: "eager"

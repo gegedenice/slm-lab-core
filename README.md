@@ -1,6 +1,6 @@
-# slm-lab-core
+# slm-lab
 
-Boîte à outils générique pour fine-tuning de Small Language Models (SLM).
+Boîte à outils pour le post-training de Small Language Models (SLM).
 
 ## Fonctionnalités
 - Préparation de données (templates instruction & chat)
@@ -17,56 +17,62 @@ pip install -e .
 ```
 ---
 
-## Arborescence
+## Structure du Projet
+
+Le projet est structuré comme un "monorepo" qui contient la bibliothèque principale `slmlab` et un répertoire `use_cases` pour les différents cas d'usage.
 
 ```
-slm-lab-core/
+slm-lab/
 ├─ README.md
 ├─ pyproject.toml
-├─ setup.cfg          # style/lint optionnel
 ├─ Makefile
-├─ .gitignore
-├─ src/
-│  └─ slmlab/
-│     ├─ __init__.py
-│     ├─ utils/
-│     │  └─ config.py
-│     ├─ prep/
-│     │  ├─ __init__.py
-│     │  └─ templating.py      # registre générique de templates
-│     ├─ train/
-│     │  ├─ __init__.py
-│     │  ├─ sft_lora.py        # fine-tune LoRA
-│     │  ├─ distill.py         # distillation (teacher->student)
-│     │  ├─ cpt.py             # continual pretraining (option)
-│     │  └─ teacher.py         # interface teacher
-│     ├─ eval/
-│     │  ├─ __init__.py
-│     │  ├─ metrics.py         # exact_match, rouge, bertscore
-│     │  ├─ xml_eval.py        # validité XML / coverage
-│     │  └─ runner.py          # eval baseline vs tuned
-│     ├─ postproc/
-│     │  └─ __init__.py        # ex: serializeurs JSON→XML
-│     └─ serve/
-│        └─ fastapi_app.py     # API générique de génération
-└─ src/cli/
-   ├─ __init__.py
-   ├─ finetune.py              # CLI fine-tuning
-   ├─ distill.py               # CLI distillation
-   ├─ prep.py                  # CLI data prep générique
-   ├─ evaluate.py              # CLI évaluation
-   └─ demo.py                  # petite API/streamlit
-
+├─ slmlab/              # Bibliothèque principale
+│  └─ ...
+├─ cli/                 # Scripts en ligne de commande
+│  └─ ...
+├─ use_cases/           # Cas d'usage
+│  └─ unimarc/
+│     ├─ configs/
+│     │  └─ default.yaml
+│     ├─ data/
+│     └─ scripts/
+└─ app.py               # Interface Gradio
 ```
 
 ---
 
-## Utilisation rapide
+## Utilisation
 
-```
-# Fine-tuning
-python -m slmlab.cli.finetune run --cfg_path configs/default.yaml
+### Ligne de commande
 
-# Évaluation
-python -m slmlab.cli.evaluate run model-base runs/adapter data/eval/heldout.jsonl
+Le `Makefile` à la racine du projet fournit des commandes pour travailler avec les cas d'usage. Vous pouvez spécifier le cas d'usage avec la variable `USE_CASE`.
+
+```bash
+# Entraîner le cas d'usage 'unimarc' (par défaut)
+make train
+
+# Entraîner un autre cas d'usage
+make train USE_CASE=mon_autre_cas
 ```
+
+### Interface Gradio
+
+Une interface Gradio est disponible pour gérer les configurations de manière interactive.
+
+```bash
+# Lancer l'interface
+make run-gradio
+```
+
+Ouvrez votre navigateur à l'adresse [http://127.0.0.1:7860](http://127.0.0.1:7860).
+
+---
+
+## Créer un nouveau cas d'usage
+
+Pour créer un nouveau cas d'usage, il suffit de copier un cas existant et de le modifier.
+
+1.  Copiez `use_cases/unimarc` vers `use_cases/mon_nouveau_cas`.
+2.  Modifiez les fichiers de configuration dans `use_cases/mon_nouveau_cas/configs`.
+3.  Ajoutez vos données dans `use_cases/mon_nouveau_cas/data`.
+4.  Lancez l'entraînement avec `make train USE_CASE=mon_nouveau_cas`.
