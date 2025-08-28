@@ -47,3 +47,26 @@ data:
   repo: "Geraldine/metadata-to-unimarc-reasoning"
   prompt_cols: ["metadata"]
   label_col: "unimarc_record"
+
+hf_job:
+  instance_type: "gpu_1x_a10g"
+  # Hugging Face Jobs parameters for the sft script
+  script_args:
+    dataset_name: "Geraldine/Unimarc-iln050-5k"
+    dataset_train_split: "train"
+    dataset_test_split: "test"
+  model_args:
+    model_name_or_path: "unsloth/LFM2-350M"
+    use_peft: true
+    lora_r: 16
+    lora_alpha: 16
+  training_args:
+    per_device_train_batch_size: 2
+    gradient_accumulation_steps: 4
+    warmup_steps: 5
+    max_steps: 100
+    learning_rate: 0.00005
+    logging_steps: 1
+    output_dir: "/tmp/output" # Relative to the job container
+    optim: "adamw_8bit"
+    do_eval: false
