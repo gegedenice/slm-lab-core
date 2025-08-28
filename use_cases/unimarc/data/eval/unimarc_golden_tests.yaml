@@ -1,0 +1,50 @@
+- name: simple-record
+  prompt: |
+    Titre: La recherche
+    Auteur: Marie Curie
+    Date: 1903
+  expect_xml: |
+    <record>
+      <datafield tag="200">
+        <subfield code="a">La recherche</subfield>
+      </datafield>
+      <datafield tag="700">
+        <subfield code="a">Marie Curie</subfield>
+      </datafield>
+      <datafield tag="210">
+        <subfield code="d">1903</subfield>
+      </datafield>
+    </record>
+- name: unimarc-minimal
+  prompt: |
+    Your are a determinist Unimarc/XML converter.
+    Rules :
+    - ONLY returns a valid and well-formed XML.
+    - UTF-8 encoding, no comment, no text out of tags.
+    - Use the relevant Unimarc fields (200, 210, 700…).
+    - If an info is missing, omit the corresponding field (does not invent anything).
+
+    Metadata (raw text):
+    Title: La recherche
+    Author: Marie Curie
+    Date: 1903
+
+    XML UNIMARC :
+  expect_contains: ["<record>", "<datafield tag=\"200\">", "<subfield code=\"a\">La recherche</subfield>"]
+
+- name: unimarc-multi-authors
+  prompt: |
+    Your are a determinist Unimarc/XML converter.
+    Rules :
+    - ONLY returns a valid and well-formed XML.
+    - UTF-8 encoding, no comment, no text out of tags.
+    - Use the relevant Unimarc fields (200, 210, 700…).
+    - If an info is missing, omit the corresponding field (does not invent anything).
+
+    Metadata (raw text):
+    Title: Introduction à la physique
+    Authors: Albert Einstein; Niels Bohr
+    Date: 1920
+
+    XML UNIMARC :
+  expect_contains: ["<datafield tag=\"700\">", "<subfield code=\"a\">Albert Einstein</subfield>", "<subfield code=\"a\">Niels Bohr</subfield>"]

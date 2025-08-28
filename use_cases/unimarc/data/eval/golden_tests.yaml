@@ -1,0 +1,12 @@
+- name: sanity-xml
+  prompt: |
+    Your are a determinist Unimarc/XML converter.
+    Metadata :
+    Titre: La recherche
+    Auteur: Marie Curie
+    Date: 1903
+
+    XML UNIMARC :
+  expect_contains:
+    - "<record>"
+    - "<datafield tag=\"200\">"
