@@ -1,24 +1,46 @@
+.PHONY: venv install prep train eval smoke clean
+
 # ---- Environment ----
 USE_CASE ?= unimarc
+VENV := .venv
+
+# ---- Load .env file ----
+ifneq (,$(wildcard .env))
+include .env
+export
+endif
 
 # ---- Installation ----
-install:
-	pip install -e .
+$(VENV):
+	uv venv $(VENV)
+	uv pip install -U pip wheel
+
+venv: $(VENV)
+
+install: $(VENV)
+	uv sync
 
 # ---- Development ----
-prep:
-	python -m cli.io build-from-hf $(USE_CASE)
+prep: install
+	uv run python -m cli.io build-from-hf $(USE_CASE)
 
-train:
-	python -m cli.finetune run $(USE_CASE)
+train: install
+	uv run python -m cli.finetune run $(USE_CASE)
 
-eval:
+eval: install
 	# TODO: Adapt cli/evaluate.py to use use-cases
-	echo "Not implemented yet"
+	uv run echo "Not implemented yet"
 
-run-gradio:
-	gradio app.py
+run-gradio: install
+	uv run gradio app.py
 
 # ---- Testing ----
-test:
-	pytest -q
+test: install
+	uv run pytest -q
+
+smoke: install
+	uv run bash use_cases/$(USE_CASE)/scripts/smoke_eval.sh
+
+# ---- Housekeeping ----
+clean:
+	rm -rf $(VENV) .venv.lock *.lock
