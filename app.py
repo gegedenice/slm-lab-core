@@ -94,6 +94,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
     config_file_paths_state = gr.State([])
     train_params_keys_state = gr.State([])
+    selected_tab_index_state = gr.State(0) # New: State to hold the selected tab index
 
     with gr.Row():
         use_case_dropdown = gr.Dropdown(choices=available_use_cases, value=selected_use_case, label="Select Use Case")
@@ -113,7 +114,6 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     MAX_TRAIN_PARAMS = 20
 
     def create_main_ui(use_case):
-        # 1. Create File Editors
         config_files = get_config_files(use_case)
         file_editors = []
         train_params_ui = []
@@ -144,15 +144,14 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
         save_file_button = gr.Button("Save Active YAML File")
 
-        # This is the tricky part: we need to return a value for every potential output component
+        # Pad lists to ensure consistent output length for Gradio
         padded_file_editors = file_editors + [None] * (MAX_FILE_EDITORS - len(file_editors))
         padded_train_params_ui = train_params_ui + [None] * (MAX_TRAIN_PARAMS - len(train_params_ui))
 
-        # The function that updates the UI must return a value for each output component
-        # The structure is: new_tabs, config_files_state, train_keys_state, file_editor_contents..., train_param_values...
-        return new_tabs, config_files, train_params_keys, save_file_button, save_train_button, *padded_file_editors, *padded_train_params_ui
+        # Return values for all output components, including initial selected tab index
+        return new_tabs, config_files, train_params_keys, save_file_button, save_train_button, 0, *padded_file_editors, *padded_train_params_ui
 
-    # Define all potential output components
+    # Define all potential output components (placeholders for dynamic UI)
     dummy_file_editors = [gr.Code(visible=False) for _ in range(MAX_FILE_EDITORS)]
     dummy_train_params = [gr.Textbox(visible=False) for _ in range(MAX_TRAIN_PARAMS)]
     dummy_save_file_button = gr.Button(visible=False)
@@ -162,14 +161,15 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     use_case_dropdown.change(
         fn=create_main_ui,
         inputs=use_case_dropdown,
-        outputs=[main_tabs, config_file_paths_state, train_params_keys_state, dummy_save_file_button, dummy_save_train_button] + dummy_file_editors + dummy_train_params
+        outputs=[main_tabs, config_file_paths_state, train_params_keys_state, dummy_save_file_button, dummy_save_train_button, selected_tab_index_state] + dummy_file_editors + dummy_train_params
     )
 
-    # Wire up the save buttons (this is complex because the buttons are created dynamically)
-    # The click events must be attached to the placeholder buttons
+    # Wire up the save buttons (click events attached to placeholders)
     dummy_save_file_button.click(
-        fn=lambda uc, files, idx, *contents: save_file_content(files[int(idx)], contents[int(idx)]),
-        inputs=[use_case_dropdown, config_file_paths_state, main_tabs.selected] + dummy_file_editors,
+        fn=lambda uc, files, tab_index, *contents:
+            save_file_content(files[int(tab_index) - 1], contents[int(tab_index) - 1])
+            if tab_index > 0 and (int(tab_index) - 1) < len(files) else "Cannot save structured config as a raw file.",
+        inputs=[use_case_dropdown, config_file_paths_state, selected_tab_index_state] + dummy_file_editors,
         outputs=output_log
     )
     dummy_save_train_button.click(
@@ -187,14 +187,21 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     ).then(
         fn=create_main_ui,
         inputs=use_case_dropdown,
-        outputs=[main_tabs, config_file_paths_state, train_params_keys_state, dummy_save_file_button, dummy_save_train_button] + dummy_file_editors + dummy_train_params
+        outputs=[main_tabs, config_file_paths_state, train_params_keys_state, dummy_save_file_button, dummy_save_train_button, selected_tab_index_state] + dummy_file_editors + dummy_train_params
     )
 
-    # Initial load
+    # New: Add a handler to update selected_tab_index_state when a tab is selected
+    main_tabs.select(
+        fn=lambda evt: evt.index, # evt.index is the 0-indexed selected tab position
+        inputs=None,
+        outputs=selected_tab_index_state
+    )
+
+    # Initial load of the UI
     demo.load(
         fn=create_main_ui,
-        inputs=gr.State(selected_use_case),
-        outputs=[main_tabs, config_file_paths_state, train_params_keys_state, dummy_save_file_button, dummy_save_train_button] + dummy_file_editors + dummy_train_params
+        inputs=gr.State(selected_use_case), # Pass the initial selected_use_case as a state
+        outputs=[main_tabs, config_file_paths_state, train_params_keys_state, dummy_save_file_button, dummy_save_train_button, selected_tab_index_state] + dummy_file_editors + dummy_train_params
     )
 
 if __name__ == "__main__":
