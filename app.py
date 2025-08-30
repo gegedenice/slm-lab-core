@@ -101,6 +101,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
     main_tabs = gr.Tabs() # Placeholder for dynamic tabs
 
+
     with gr.Row():
         train_button = gr.Button("Train Use Case")
 
@@ -197,4 +198,4 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     )
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(share=True)
