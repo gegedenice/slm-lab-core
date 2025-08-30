@@ -28,8 +28,7 @@ train: install
 	uv run python -m cli.finetune run $(USE_CASE)
 
 eval: install
-	# TODO: Adapt cli/evaluate.py to use use-cases
-	uv run echo "Not implemented yet"
+	uv run python -m cli.evaluate run $(USE_CASE)
 
 run-gradio: install
 	uv run gradio app.py

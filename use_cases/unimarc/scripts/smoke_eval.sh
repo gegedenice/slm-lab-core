@@ -1,17 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-USE_CASE="unimarc"
-BASE="{{cookiecutter.default_model_id}}" # This will need to be loaded from config
-EVAL_DATA="data/eval/heldout.jsonl" # Relative to use-case dir
+# This script runs a full prep -> train -> eval pipeline for the current use-case.
+# It is intended to be run from the project root via `make smoke`.
+# The `USE_CASE` variable is expected to be set by the Makefile.
 
-echo "[prep] building tiny split from HF (if configured)…"
-make prep USE_CASE=$USE_CASE || true
+echo " smoketest"
+echo "================================="
+echo " USE CASE: ${USE_CASE}"
+echo "================================="
 
-echo "[train] quick LoRA run…"
-python -m cli.finetune run $USE_CASE
+echo "\n[1/3] Preparing data..."
+make prep USE_CASE=${USE_CASE}
 
-echo "[eval] comparing baseline vs tuned…"
-# Note: The evaluate script would also need to be adapted to be use-case aware
-# For now, this is a placeholder
-echo "python -m cli.evaluate run $BASE use_cases/$USE_CASE/runs/adapter use_cases/$USE_CASE/$EVAL_DATA"
+echo "\n[2/3] Running a short training..."
+# We can override make variables for the smoke test.
+# For example, run for fewer steps.
+# This requires the training script to accept these overrides.
+# For now, we run the default config.
+make train USE_CASE=${USE_CASE}
+
+echo "\n[3/3] Running evaluation..."
+make eval USE_CASE=${USE_CASE}
+
+echo "\n smoketest complete for ${USE_CASE}!"

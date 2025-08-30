@@ -40,7 +40,7 @@ def train(cfg, output_dir: str):
         lora_dropout=_get(peft_config, "lora_dropout", 0),
         bias=_get(peft_config, "bias", "none"),
         random_state=_get(peft_config, "random_state", 3407),
-        target_modules = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+        target_modules=_get(peft_config, "target_modules", ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]),
     )
 
     # ---- 3. Load and Format Dataset ----
