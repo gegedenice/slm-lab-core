@@ -81,7 +81,7 @@ with gr.Blocks() as demo:
         with gr.TabItem("YAML Config"):
             config_editor = gr.Code(label="Config (default.yaml)", language="yaml", lines=20)
         with gr.TabItem("Prompt Templates"):
-            with gr.Box(visible=False) as prompt_box:
+            with gr.Group(visible=False) as prompt_box:
                 base_instruction_editor = gr.Textbox(label="Base Instruction", lines=10)
                 system_prompt_editor = gr.Textbox(label="System Prompt", lines=5)
 
@@ -111,4 +111,4 @@ with gr.Blocks() as demo:
     refresh_button.click(fn=refresh_use_cases, inputs=None, outputs=use_case_dropdown)
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(share=True)
